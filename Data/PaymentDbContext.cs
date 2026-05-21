@@ -10,6 +10,8 @@ public class PaymentDbContext : DbContext
     public DbSet<PaymentRequest> PaymentRequests => Set<PaymentRequest>();
     public DbSet<PaymentQueueItem> PaymentQueueItems => Set<PaymentQueueItem>();
     public DbSet<PaymentDeadLetter> PaymentDeadLetters => Set<PaymentDeadLetter>();
+    public DbSet<Schedule> Schedules => Set<Schedule>();
+    public DbSet<SchedulePayment> SchedulePayments => Set<SchedulePayment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -30,6 +32,30 @@ public class PaymentDbContext : DbContext
         {
             entity.HasKey(d => d.Id);
             entity.HasIndex(d => d.RequestId);
+        });
+
+        modelBuilder.Entity<Schedule>(entity =>
+        {
+            entity.HasKey(s => s.Id);
+            entity.Property(s => s.Frequency).HasConversion<string>();
+            entity.Property(s => s.Status).HasConversion<string>();
+            entity.HasMany(s => s.SchedulePayments)
+                .WithOne(sp => sp.Schedule)
+                .HasForeignKey(sp => sp.ScheduleId);
+        });
+
+        modelBuilder.Entity<SchedulePayment>(entity =>
+        {
+            entity.HasKey(sp => sp.Id);
+            entity.HasIndex(sp => sp.ScheduleId);
+            entity.HasIndex(sp => sp.PaymentRequestId);
+            entity.Property(sp => sp.Status).HasConversion<string>();
+            entity.HasOne(sp => sp.Schedule)
+                .WithMany(s => s.SchedulePayments)
+                .HasForeignKey(sp => sp.ScheduleId);
+            entity.HasOne(sp => sp.PaymentRequest)
+                .WithMany()
+                .HasForeignKey(sp => sp.PaymentRequestId);
         });
     }
 }
